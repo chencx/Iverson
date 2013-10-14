@@ -1,0 +1,69 @@
+本程序完成视频播放进度随进度条变化及手拖动进度条播放变化的功能
+
+//CV 模块中包含了图像处理，图像结构分析，
+//运动描述和跟踪，模式识别和摄像机标定
+#include "cv.h"
+
+//包含了图像和视频的输入/输出
+#include "highgui.h"
+
+//用来标定滚动条当前的位置
+int g_Pos=0;
+//将打开的视频文件作为一个全局变量使用
+CvCapture * g_Capture=NULL;
+
+//当拖动滚动条后，会回调这个函数
+//同时会将当前滚动条的位置以32 位形式““传递过来”””(重点)
+void CallBackTrackBarSlide(int pos)
+{
+	//这里便是重新设置视频文件当前播放的帧
+	cvSetCaptureProperty(g_Capture,CV_CAP_PROP_POS_FRAMES,pos);
+}
+
+
+int main(int argc,char **argv)
+{
+	cvNamedWindow("Demo03",CV_WINDOW_AUTOSIZE);
+	//根据参数打开指定的视频文件
+	g_Capture=cvCreateFileCapture("D:\\woo\\vehicle detection\\ddd\\Debug\\hw.avi");//此处前面不能加CvCapture *否则失效
+	//获得总的帧数
+	int totalFrames=
+		(int)cvGetCaptureProperty(g_Capture,CV_CAP_PROP_FRAME_COUNT);
+
+	if(totalFrames!=0)
+	{
+		//创建滚动条，在这里指定了滚动条拖动后的回调函数同时将滑块的位置调给被調函数（控制条名称，窗口名称，滑块的位置，总共显示的帧数，被調函数）
+		cvCreateTrackbar("TrackBar","Demo03",
+			&g_Pos,totalFrames,CallBackTrackBarSlide);
+	}
+
+	IplImage * frame;
+	//循环的顺序的遍历所有的帧
+	while(1)
+	{
+		//获取当前帧的下一个帧，并将其加载到内存中
+		frame=cvQueryFrame(g_Capture);
+		if(!frame)
+		{
+			break;
+		}
+		cvShowImage("Demo03",frame);
+		if(cvWaitKey(30)==27)
+		{
+			break;
+		}
+                 g_Pos++;
+
+		//当播放完200 个帧的时候才触发滚动条滚动
+		if(g_Pos%200==0)
+		{
+			cvSetTrackbarPos("TrackBar","Demo04", g_Pos);
+		}
+
+	}
+
+	cvReleaseCapture(&g_Capture);
+	cvDestroyWindow("Demo03");
+
+	return 0;
+}
